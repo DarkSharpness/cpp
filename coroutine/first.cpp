@@ -18,7 +18,9 @@ struct promise {
     std::suspend_always final_suspend() noexcept {
         return {};
     }
-    void return_void() {}
+    // void return_void() {}
+    auto yield_value(auto x) { return x; }
+    void return_value(int x) {}
     void unhandled_exception() {}
 };
 
@@ -29,7 +31,9 @@ struct X {
 coroutine f() {
     std::puts("f() start");
     X x;
-    co_return;
+    co_yield std::suspend_always{};
+    co_yield std::suspend_never {};
+    co_return 1;
 }
 
 signed main() {
@@ -42,6 +46,8 @@ signed main() {
     std::cout << std::format("c.done() = {}\n", c.done());
 
     c.resume();
+    c.resume();
+    // c.resume();
 
     std::cout << std::format("c.done() = {}\n", c.done());
 
