@@ -122,13 +122,13 @@ private:
     coroutine *coro = {};
 };
 
-auto range_integer(int min, int max) -> coroutine {
+static auto range_integer(int min, int max) -> coroutine {
     for (int i = min; i < max; ++i) {
         co_yield i;
     }
 }
 
-auto fib() -> coroutine {
+static auto fib() -> coroutine {
     co_yield 0;
     co_yield 1;
     int a = 0;
