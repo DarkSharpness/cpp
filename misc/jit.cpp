@@ -1,3 +1,4 @@
+#include <bit>
 #include <cassert>
 #include <cstring>
 #include <iostream>
@@ -21,7 +22,7 @@ auto main() -> int {
     assert(::mprotect(page, 4096, PROT_READ | PROT_EXEC) == 0);
 
     using int_fn_t = int (*)(void);
-    auto fn        = reinterpret_cast<int_fn_t>(page);
+    auto fn        = std::bit_cast<int_fn_t>(page);
     int result     = fn();
 
     // check if we can execute the ret command
