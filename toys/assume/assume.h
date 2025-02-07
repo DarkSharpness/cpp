@@ -29,6 +29,9 @@ static auto invoke_callable(_Fn &&fn, _Args &&...args) -> std::string {
     }
 }
 
+template <typename _Tp>
+concept condition = requires(_Tp &&cond) { static_cast<bool>(cond); };
+
 } // namespace __detail
 
 struct panic_handler {
@@ -62,8 +65,7 @@ inline auto panic(
     panic_handler::trap(msg, loc, detail);
 }
 
-template <typename _Cond = bool, typename... _Args>
-    requires std::constructible_from<bool, _Cond>
+template <__detail::condition _Cond = bool, typename... _Args>
 struct assume {
 private:
     using _Src_t = std::source_location;
