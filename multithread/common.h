@@ -1,12 +1,12 @@
 #pragma once
 // Mutlithread utilities
-#include <thread>
-#include <mutex>
 #include <atomic>
 #include <condition_variable>
+#include <mutex>
 #include <semaphore>
+#include <thread>
 
 // Basic utilities
+#include <format>
 #include <iostream>
 #include <vector>
-#include <format>

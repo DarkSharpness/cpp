@@ -1,6 +1,6 @@
 #include <future>
-#include <thread>
 #include <iostream>
+#include <thread>
 
 auto main() -> int {
     using namespace std::chrono_literals;

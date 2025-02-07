@@ -5,12 +5,12 @@ void test_istream_view(std::istream &is) {
     // Input until 0
     // Note that there might be some bug when used with std::views::take
     for (auto x : std::ranges::istream_view<int>(is) |
-        std::views::take_while([](int x) { return x != 0; })) {
+                      std::views::take_while([](int x) { return x != 0; })) {
         std::cout << x << std::endl;
     }
 }
 
-void test_all_view(std::span <const int> view) {
+void test_all_view(std::span<const int> view) {
     for (auto x : view | std::views::all) {
         std::cout << x << std::endl;
     }
@@ -30,31 +30,31 @@ void test_common_view(size_t count) {
     an_annoying_same_iter_API(common_view.begin(), common_view.end());
 }
 
-void test_counted_view(std::span <const int> view) {
+void test_counted_view(std::span<const int> view) {
     for (auto x : std::views::counted(view.begin(), 3)) {
         std::cout << x << std::endl;
     }
 }
 
-void test_drop_take_reverse_view(std::span <const int> view) {
+void test_drop_take_reverse_view(std::span<const int> view) {
     for (auto x : view | std::views::drop(2) | std::views::take(2)) {
         std::cout << x << std::endl;
     }
-    std::cout.put('\n'); 
-    for (auto x : view | std::views::reverse | std::views::drop(2) | std::views::take(2)) {
+    std::cout.put('\n');
+    for (auto x :
+         view | std::views::reverse | std::views::drop(2) | std::views::take(2)) {
         std::cout << x << std::endl;
     }
-    std::cout.put('\n'); 
-    for (auto x : view
-        | std::views::drop_while([](int x) { return x <= 2; })
-        | std::views::take_while([](int x) { return x != 4; })) {
+    std::cout.put('\n');
+    for (auto x : view | std::views::drop_while([](int x) { return x <= 2; }) |
+                      std::views::take_while([](int x) { return x != 4; })) {
         std::cout << x << std::endl;
     }
 }
 
 #include <map>
 
-void test_element_view(const std::map <size_t, std::string> &map) {
+void test_element_view(const std::map<size_t, std::string> &map) {
     for (auto &value : map | std::views::values) {
         std::cout << value << std::endl;
     }
@@ -66,14 +66,12 @@ void test_element_view(const std::map <size_t, std::string> &map) {
     }
 }
 
-void test_filter_transform_view(std::span <const int> view) {
-    for (auto x : view
-        | std::views::filter([](int x) { return x % 2 == 0; })
-        | std::views::transform([](int x) { return x * x; })) {
+void test_filter_transform_view(std::span<const int> view) {
+    for (auto x : view | std::views::filter([](int x) { return x % 2 == 0; }) |
+                      std::views::transform([](int x) { return x * x; })) {
         std::cout << x << std::endl;
     }
 }
-
 
 #include <vector>
 

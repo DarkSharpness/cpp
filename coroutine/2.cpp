@@ -59,7 +59,8 @@ struct promise_type {
         std::cout << "1.create promise object\n";
     }
     auto get_return_object() noexcept -> task {
-        std::cout << "2.create coroutine return object, and the coroutine is created now\n";
+        std::cout
+            << "2.create coroutine return object, and the coroutine is created now\n";
         return {std::coroutine_handle<task::promise_type>::from_promise(*this)};
     }
     auto initial_suspend() noexcept -> suspend_never {
@@ -69,9 +70,11 @@ struct promise_type {
         return {};
     }
     auto final_suspend() noexcept -> std::suspend_never {
-        std::cout << "13.coroutine body finished, do you want to suspend the current coroutine?\n";
-        std::cout << "14.don't suspend because return std::suspend_never, and the continue "
-                     "will be automatically destroyed, bye\n";
+        std::cout << "13.coroutine body finished, do you want to suspend the current "
+                     "coroutine?\n";
+        std::cout
+            << "14.don't suspend because return std::suspend_never, and the continue "
+               "will be automatically destroyed, bye\n";
         return {};
     }
     auto return_value(std::any) noexcept -> void {
@@ -94,7 +97,8 @@ struct awaiter {
         std::cout << "7.yes, suspend becase awaiter.await_ready() return false\n";
         return false;
     }
-    auto await_suspend(std::coroutine_handle<task::promise_type> handle) noexcept -> bool {
+    auto await_suspend(std::coroutine_handle<task::promise_type> handle) noexcept
+        -> bool {
         promise_ref = &handle.promise();
         std::cout << "8.execute awaiter.await_suspend()\n";
         // In another thread, carrying the handle to resume the coroutine
@@ -124,12 +128,13 @@ static auto operator co_await(Awaitable) noexcept -> awaiter {
 }
 
 static auto test() -> task {
-    std::cout << "5.begin to execute coroutine body, the thread id=" << std::this_thread::get_id()
-              << "\n";
+    std::cout << "5.begin to execute coroutine body, the thread id="
+              << std::this_thread::get_id() << "\n";
     std::cout << co_await Awaitable{}
               << '\n'; // if await_ready return false, the coroutine will be suspended.
-    std::cout << "11.coroutine resumed, continue execute coroutine body now, the thread id="
-              << std::this_thread::get_id() << "\n";
+    std::cout
+        << "11.coroutine resumed, continue execute coroutine body now, the thread id="
+        << std::this_thread::get_id() << "\n";
     co_return 0;
     // throw std::runtime_error("test");
 }

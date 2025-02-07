@@ -9,7 +9,8 @@ const std::size_t N = 9;
 void consumer() {
     while (true) {
         std::unique_lock lock(::lock);
-        while (count == 0) cv.wait(lock);
+        while (count == 0)
+            cv.wait(lock);
         --count;
         std::cout << std::format("Consumer: {} -> {}\n", count + 1, count);
         cv.notify_all();
@@ -19,7 +20,8 @@ void consumer() {
 void producer() {
     while (true) {
         std::unique_lock lock(::lock);
-        while (count == N) cv.wait(lock);
+        while (count == N)
+            cv.wait(lock);
         ++count;
         std::cout << std::format("Producer: {} -> {}\n", count - 1, count);
         cv.notify_all();
@@ -35,6 +37,7 @@ signed main(int argc, char **argv) {
         threads.push_back(std::thread(consumer));
         threads.push_back(std::thread(producer));
     }
-    for (auto &thread : threads) thread.join();
+    for (auto &thread : threads)
+        thread.join();
     return 0;
 }
