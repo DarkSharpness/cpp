@@ -1,0 +1,17 @@
+repos:
+  # Standard hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: end-of-file-fixer
+        types_or: [c++, c]
+      - id: mixed-line-ending
+        types_or: [c++, c]
+      - id: trailing-whitespace
+        types_or: [c++, c]
+
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: v19.1.7
+    hooks:
+      - id: clang-format
+        types_or: [c++]
