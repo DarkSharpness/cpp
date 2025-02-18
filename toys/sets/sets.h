@@ -15,19 +15,29 @@ concept set_like = set_op_traits<_Tp>::value;
 namespace __detail {
 
 template <typename _Tp>
-concept set_has_default_and = set_op_traits<_Tp>::has_and;
+concept set_has_default_and = requires(const _Tp &a) {
+    { std::move(a) & std::move(a) } -> std::same_as<_Tp>;
+};
 
 template <typename _Tp>
-concept set_has_default_or = set_op_traits<_Tp>::has_or;
+concept set_has_default_or = requires(const _Tp &a) {
+    { std::move(a) | std::move(a) } -> std::same_as<_Tp>;
+};
 
 template <typename _Tp>
-concept set_has_default_xor = set_op_traits<_Tp>::has_xor;
+concept set_has_default_xor = requires(const _Tp &a) {
+    { std::move(a) ^ std::move(a) } -> std::same_as<_Tp>;
+};
 
 template <typename _Tp>
-concept set_has_default_sub = set_op_traits<_Tp>::has_sub;
+concept set_has_default_sub = requires(const _Tp &a) {
+    { std::move(a) / std::move(a) } -> std::same_as<_Tp>;
+};
 
 template <typename _Tp>
-concept set_has_default_cmp = set_op_traits<_Tp>::has_cmp;
+concept set_has_default_cmp = requires(const _Tp &a) {
+    { std::move(a) <=> std::move(a) } -> std::same_as<std::partial_ordering>;
+};
 
 template <typename _Tp>
 concept set_has_default_not = requires(const _Tp &a) {
@@ -158,24 +168,44 @@ public:
 };
 
 template <typename _Tp>
-concept set_generate_and =
+concept set_generate_and_ =
     set_like<_Tp> && !set_has_default_and<_Tp> && requires { set_op_impl<_Tp>::op_and; };
 
 template <typename _Tp>
-concept set_generate_or =
+concept set_generate_or_ =
     set_like<_Tp> && !set_has_default_or<_Tp> && requires { set_op_impl<_Tp>::op_or; };
 
 template <typename _Tp>
-concept set_generate_xor =
+concept set_generate_xor_ =
     set_like<_Tp> && !set_has_default_xor<_Tp> && requires { set_op_impl<_Tp>::op_xor; };
 
 template <typename _Tp>
-concept set_generate_sub =
+concept set_generate_sub_ =
     set_like<_Tp> && !set_has_default_sub<_Tp> && requires { set_op_impl<_Tp>::op_sub; };
 
 template <typename _Tp>
-concept set_generate_cmp =
+concept set_generate_cmp_ =
     set_like<_Tp> && !set_has_default_cmp<_Tp> && requires { set_op_impl<_Tp>::op_cmp; };
+
+template <typename _Tp>
+concept set_generate_and = set_generate_and_<std::remove_cvref_t<_Tp>>;
+
+template <typename _Tp>
+concept set_generate_or = set_generate_or_<std::remove_cvref_t<_Tp>>;
+
+template <typename _Tp>
+concept set_generate_xor = set_generate_xor_<std::remove_cvref_t<_Tp>>;
+
+template <typename _Tp>
+concept set_generate_sub = set_generate_sub_<std::remove_cvref_t<_Tp>>;
+
+template <typename _Tp>
+concept set_generate_cmp = set_generate_cmp_<std::remove_cvref_t<_Tp>>;
+
+// can't be 2 const &&types, yet must be the same type
+template <typename _Tp, typename _Up>
+concept base_same = std::same_as<std::remove_cvref_t<_Tp>, std::remove_cvref_t<_Up>> &&
+                    !(std::is_const_v<_Tp> && std::is_const_v<_Up>);
 
 } // namespace __detail
 
@@ -191,24 +221,34 @@ concept full_set_like = set_like<_Tp> && std::constructible_from<_Tp> && require
     { ~a } -> std::same_as<_Tp>;
 };
 
-template <__detail::set_generate_and _Tp>
-inline constexpr auto operator&(const _Tp &a, const _Tp &b) -> decltype(auto) {
-    return __detail::set_op_impl<_Tp>::op_and(a, b);
+template <typename _Tp, __detail::base_same<_Tp> _Up>
+    requires(__detail::set_generate_and<_Tp>)
+inline constexpr auto operator&(_Tp &&a, _Up &&b) -> decltype(auto) {
+    return __detail::set_op_impl<std::remove_cvref_t<_Tp>>::op_and(a, b);
 }
 
-template <__detail::set_generate_or _Tp>
-inline constexpr auto operator|(const _Tp &a, const _Tp &b) -> decltype(auto) {
-    return __detail::set_op_impl<_Tp>::op_or(a, b);
+template <typename _Tp, __detail::base_same<_Tp> _Up>
+    requires(__detail::set_generate_or<_Tp>)
+inline constexpr auto operator|(_Tp &&a, _Up &&b) -> decltype(auto) {
+    return __detail::set_op_impl<std::remove_cvref_t<_Tp>>::op_or(a, b);
 }
 
-template <__detail::set_generate_xor _Tp>
-inline constexpr auto operator^(const _Tp &a, const _Tp &b) -> decltype(auto) {
-    return __detail::set_op_impl<_Tp>::op_xor(a, b);
+template <typename _Tp, __detail::base_same<_Tp> _Up>
+    requires(__detail::set_generate_xor<_Tp>)
+inline constexpr auto operator^(_Tp &&a, _Up &&b) -> decltype(auto) {
+    return __detail::set_op_impl<std::remove_cvref_t<_Tp>>::op_xor(a, b);
 }
 
-template <__detail::set_generate_sub _Tp>
-inline constexpr auto operator/(const _Tp &a, const _Tp &b) -> decltype(auto) {
-    return __detail::set_op_impl<_Tp>::op_sub(a, b);
+template <typename _Tp, __detail::base_same<_Tp> _Up>
+    requires(__detail::set_generate_sub<_Tp>)
+inline constexpr auto operator/(_Tp &&a, _Up &&b) -> decltype(auto) {
+    return __detail::set_op_impl<std::remove_cvref_t<_Tp>>::op_sub(a, b);
+}
+
+template <typename _Tp, __detail::base_same<_Tp> _Up>
+    requires(__detail::set_generate_cmp<_Tp>)
+inline constexpr auto operator<=>(_Tp &&a, _Up &&b) -> std::partial_ordering {
+    return __detail::set_op_impl<std::remove_cvref_t<_Tp>>::op_cmp(a, b);
 }
 
 template <std::constructible_from<> _Tp>
@@ -235,11 +275,6 @@ inline constexpr auto operator-(const _Tp &a, const _Tp &b) -> decltype(auto) {
     if ((a & b) != b)
         throw std::invalid_argument{"Sets must be disjoint"};
     return a / b;
-}
-
-template <__detail::set_generate_cmp _Tp>
-inline constexpr auto operator<=>(const _Tp &a, const _Tp &b) -> std::partial_ordering {
-    return __detail::set_op_impl<_Tp>::op_cmp(a, b);
 }
 
 } // namespace set_operation

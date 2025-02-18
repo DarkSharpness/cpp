@@ -25,10 +25,7 @@ inline constexpr auto operator&(key_set x, key_set y) -> key_set {
 }
 
 template <>
-struct set_op_traits<key_set> : std::true_type {
-    static constexpr bool has_and = true;
-    static constexpr bool has_not = true;
-};
+struct set_op_traits<key_set> : std::true_type {};
 
 namespace std {
 
@@ -67,10 +64,7 @@ auto display_set(const std::set<int> &set) -> void {
 }
 
 template <typename _Tp>
-struct set_op_traits<std::set<_Tp>> : std::true_type {
-    static constexpr bool has_and = true;
-    static constexpr bool has_xor = true;
-};
+struct set_op_traits<std::set<_Tp>> : std::true_type {};
 
 struct custom_set : private std::set<int> {
     using std::set<int>::set;
@@ -98,10 +92,7 @@ inline auto operator==(const custom_set &x, const custom_set &y) -> bool {
 }
 
 template <>
-struct set_op_traits<custom_set> : std::true_type {
-    static constexpr bool has_or  = true;
-    static constexpr bool has_sub = true;
-};
+struct set_op_traits<custom_set> : std::true_type {};
 
 auto display_set(const custom_set &set) -> void {
     return display_set(set.to_base());
