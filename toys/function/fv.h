@@ -1,8 +1,8 @@
+#pragma once
 #include <bit>
 #include <concepts>
 #include <functional>
-#include <iostream>
-#include <memory>
+#include <type_traits>
 #include <utility>
 
 template <class _Signature>
@@ -36,8 +36,8 @@ private:
 
     using self_t = function_view;
 
-    using raw_t = _Ret (*)(_Args...);
     using ptr_t = _Ret (*)(void *, _Args...);
+    using raw_t = _Ret (*)(_Args...);
     using ctx_t = void *;
 
     template <can_invoke_with<_Ret, _Args...> _Fn>
@@ -115,10 +115,3 @@ function_view(_Fn) -> function_view<std_function_deduce_t<_Fn>>;
 
 template <typename _Fn>
 function_view(_Fn, struct unsafe) -> function_view<std_function_deduce_t<_Fn>>;
-
-auto main() -> int {
-    auto fv             = function_view{[](int a, int b) { return a + b; }};
-    const auto callable = std::function{fv};
-    auto fv2            = function_view{callable};
-    std::cout << int(fv2(fv(255, 3), 1)) << '\n';
-}
