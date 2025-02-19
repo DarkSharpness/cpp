@@ -71,11 +71,11 @@ struct custom_set : private std::set<int> {
     using std::set<int>::begin;
     using std::set<int>::end;
     custom_set(std::set<int> set) : std::set<int>{std::move(set)} {}
-    auto to_base() const -> const std::set<int> & {
-        return *this;
+    auto to_base() const & -> const std::set<int> & {
+        return static_cast<const std::set<int> &>(*this);
     }
     auto to_base() && -> std::set<int> {
-        return std::move(*this);
+        return std::move(static_cast<std::set<int> &>(*this));
     }
 };
 
@@ -112,8 +112,8 @@ auto main() -> int {
     auto set2 = custom_set{1, 2};
     auto set3 = custom_set{2, 3};
     display_set(set2 & set3);
-    display_set(set2 / set3);
-    display_set(set3 / set2);
+    display_set(set2 ^ set3);
+    display_set(set3 ^ set2);
 
     std::cout << std::boolalpha;
 
