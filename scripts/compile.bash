@@ -56,4 +56,9 @@ if [ $echo = "echo" ]; then
     echo "====  End of compile commands  ===="
 fi
 
+if [ $echo = "only" ]; then
+    echo "$compiler $file -o $binary $args"
+    exit 0
+fi
+
 $compiler $file -o $binary $args

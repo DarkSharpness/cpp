@@ -15,3 +15,11 @@ repos:
     hooks:
       - id: clang-format
         types_or: [c++]
+
+  - repo: local
+    hooks:
+      - id: compile-local-check
+        name: compile-local-check
+        entry: python scripts/ci.py
+        language: python
+        files: \.cpp$
