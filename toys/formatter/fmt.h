@@ -19,10 +19,10 @@ namespace __detail {
 template <std::size_t _Len, char _L = '(', char _R = ')'>
 consteval auto make_tuple_format() {
     if constexpr (_Len == 0) {
-        return std::array<char, 3>{_L, _R, '\0'};
+        return std::array<char, 2>{_L, _R};
     } else {
         // <{}>, each extra arg contribute to , {}
-        auto result = std::array<char, 4 * _Len + 1>{};
+        auto result = std::array<char, 4 * _Len>{};
         result[0]   = _L;
         result[1]   = '{';
         result[2]   = '}';
