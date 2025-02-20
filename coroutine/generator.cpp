@@ -1,3 +1,4 @@
+#if __has_include(<generator>)
 #include <generator>
 #include <iostream>
 
@@ -19,23 +20,24 @@ struct Tree {
 };
 
 int main() {
-    Tree<char> tree[]{
-        {'D', tree + 1, tree + 2},
+    // clang-format off
+    Tree<char> tree[]
+    {
+                                    {'D', tree + 1, tree + 2},
         //                            │
         //            ┌───────────────┴────────────────┐
         //            │                                │
-        {'B', tree + 3, tree + 4},
-        {'F', tree + 5, tree + 6},
+                    {'B', tree + 3, tree + 4},       {'F', tree + 5, tree + 6},
         //            │                                │
         //  ┌─────────┴─────────────┐      ┌───────────┴─────────────┐
         //  │                       │      │                         │
-        {'A'},
-        {'C'},
-        {'E'},
-        {'G'}
+          {'A'},                  {'C'}, {'E'},                    {'G'}
     };
+    // clang-format on
 
     for (char x : tree->traverse_inorder())
         std::cout << x << ' ';
     std::cout << '\n';
 }
+
+#endif
