@@ -18,8 +18,8 @@ repos:
 
   - repo: local
     hooks:
-      - id: compile-local-check
-        name: compile-local-check
-        entry: python scripts/ci.py
+      - id: syntax-check
+        name: syntax-check
+        entry: python scripts/syntax.py
         language: python
         files: \.cpp$

@@ -32,6 +32,16 @@ with open(random_file, 'r') as file:
 # from g++ __test__ -o -fsyntax-only -> g++ {} -fsyntax-only
 compile_cmd = 'ccache ' + compile_cmd.strip().replace('__test__', '{}').replace(' -o ', ' ')
 
+# remove all the linker flags, e.g. -lstdc++
+compile_cmd = ' '.join(filter(lambda x: not x.startswith('-l'), compile_cmd.split()))
+
+for file in sys.argv[1:]:
+    if os.system(compile_cmd.format(file) + ' 2>/dev/null >/dev/null'):
+        panic('Failed to compile file: ' + file + '\n- ' + compile_cmd.format(file))
+
+# replace the first g++ with clang++
+compile_cmd = compile_cmd.replace('g++', 'clang++', 1)
+
 for file in sys.argv[1:]:
     if os.system(compile_cmd.format(file) + ' 2>/dev/null >/dev/null'):
         panic('Failed to compile file: ' + file + '\n- ' + compile_cmd.format(file))
