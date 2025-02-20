@@ -113,5 +113,5 @@ explicit assume(_Cond &&, _Fn &&, _Args &&...) -> assume<_Cond, _Args...>;
 } // namespace dark
 
 #ifdef _LOCAL
-#include "assume_impl.cpp"
+#include "assume_impl.cc"
 #endif
