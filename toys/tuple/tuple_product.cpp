@@ -1,4 +1,4 @@
-#include "formatter.h" // IWYU pragma: keep
+#include "../formatter/fmt.h" // IWYU pragma: keep
 #include "tag.h"
 #include <algorithm>
 #include <array>
@@ -204,10 +204,10 @@ static auto unit_test1() -> void {
     const auto v   = tuple_product(x, y, z, w);
     const auto msg = std::format("{}\n", v);
     const auto result =
-        "<<0, hello, 3.14, false>, <0, hello, 3.14, true>, <0, <>, 3.14, false>, <0, <>, "
-        "3.14, true>, <1, hello, 3.14, false>, <1, hello, 3.14, true>, <1, <>, 3.14, "
-        "false>, <1, <>, 3.14, true>, <2, hello, 3.14, false>, <2, hello, 3.14, true>, "
-        "<2, <>, 3.14, false>, <2, <>, 3.14, true>>\n";
+        "((0, hello, 3.14, false), (0, hello, 3.14, true), (0, (), 3.14, false), (0, (), "
+        "3.14, true), (1, hello, 3.14, false), (1, hello, 3.14, true), (1, (), 3.14, "
+        "false), (1, (), 3.14, true), (2, hello, 3.14, false), (2, hello, 3.14, true), "
+        "(2, (), 3.14, false), (2, (), 3.14, true))\n";
     if (msg != result)
         std::terminate();
     std::cout << msg;
