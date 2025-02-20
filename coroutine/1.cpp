@@ -22,7 +22,7 @@ struct promise {
     auto yield_value(auto x) {
         return x;
     }
-    void return_value(int x) {}
+    void return_value(int) {}
     void unhandled_exception() {}
 };
 
