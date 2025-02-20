@@ -9,6 +9,25 @@ concept aggregate_type = std::is_aggregate_v<std::decay_t<_Tp>>;
 
 namespace __detail {
 
+template <typename _Tp>
+consteval auto make_void(const _Tp &) -> void {}
+
+template <typename _Tp>
+consteval auto get_aux(const _Tp &obj) -> decltype(auto) {
+    // rely on ADL to find the correct get() function
+    constexpr auto kSize = std::tuple_size<_Tp>::value - 1;
+    return make_void(get<kSize>(obj));
+}
+
+template <typename _Tp>
+concept tuple_like_aux = requires { std::tuple_size<_Tp>::value; } &&
+                         (std::tuple_size<_Tp>::value == 0 ||
+                          (std::same_as<decltype(get_aux(std::declval<_Tp>())), void> &&
+                           requires { typename std::tuple_element_t<0, _Tp>; }));
+
+template <typename _Tp>
+concept tuple_like = tuple_like_aux<std::decay_t<_Tp>>;
+
 /* A init helper to get the size of a struct. */
 struct any_init {
     template <typename _Tp>
@@ -43,11 +62,6 @@ inline consteval auto member_size_aux(auto &&...args) -> std::size_t {
 }
 
 template <aggregate_type _Tp>
-inline consteval auto member_size(const _Tp &) -> std::size_t {
-    return member_size_aux<_Tp>();
-}
-
-template <aggregate_type _Tp>
 inline consteval auto member_size() -> std::size_t {
     return member_size_aux<std::remove_cvref_t<_Tp>>();
 }
@@ -58,8 +72,8 @@ inline constexpr auto tuplify_fallback(_Tp &) {
 }
 
 template <aggregate_type _Tp>
-constexpr auto tuplify(_Tp &value) {
-    constexpr auto size = member_size_aux<_Tp>();
+constexpr auto tuplify_aux(_Tp &value) {
+    constexpr auto size = member_size<_Tp>();
 
     if constexpr (size == 0)
         return std::tuple<>();
@@ -138,17 +152,62 @@ constexpr auto tuplify(_Tp &value) {
     else return tuplify_fallback<_Tp>(value);
 }
 
+template <typename _Tp, typename _Ref_Tuple>
+constexpr auto forward_ref_tuple(_Ref_Tuple &&tuple) {
+    if constexpr (std::is_reference_v<_Tp>)
+        return tuple;
+    else
+        return std::apply(
+            [](auto &&...args) { return std::tuple(std::move(args)...); }, tuple
+        );
+}
+
 } // namespace __detail
 
-template <aggregate_type _Tp>
+template <__detail::tuple_like _Tp>
 constexpr auto tuplify(_Tp &&value) -> decltype(auto) {
-    auto ref_tuple = __detail::tuplify(value);
+    constexpr auto size = std::tuple_size_v<std::decay_t<_Tp>>;
     if constexpr (std::is_reference_v<_Tp>)
-        return ref_tuple;
-    else // move to a value tuple
+        return [&]<std::size_t... _I>(std::index_sequence<_I...>) {
+            return std::forward_as_tuple(std::get<_I>(value)...);
+        }(std::make_index_sequence<size>{});
+    else
+        return [&]<std::size_t... _I>(std::index_sequence<_I...>) {
+            return std::tuple(std::get<_I>(std::move(value))...);
+        }(std::make_index_sequence<size>{});
+}
+
+template <aggregate_type _Tp>
+    requires(!__detail::tuple_like<_Tp>)
+constexpr auto tuplify(_Tp &&value) -> decltype(auto) {
+    auto ref_tuple = __detail::tuplify_aux(value);
+    return __detail::forward_ref_tuple<_Tp>(ref_tuple);
+}
+
+template <typename _Tp>
+concept can_tuplify = requires(const _Tp &obj) { tuplify(obj); };
+
+namespace __detail {
+
+template <typename _Tp>
+constexpr auto flatten_aux(_Tp &value) -> decltype(auto) {
+    // always return a tuple, even if it's a single value
+    if constexpr (!can_tuplify<_Tp>) {
+        return std::forward_as_tuple(value);
+    } else {
         return std::apply(
-            [](auto &&...args) { return std::tuple(std::move(args)...); }, ref_tuple
+            [](auto &&...args) { return std::tuple_cat(flatten_aux(args)...); },
+            tuplify(value) // tuplify value and try to flatten each member
         );
+    }
+}
+
+} // namespace __detail
+
+template <typename _Tp>
+constexpr auto flatten(_Tp &&value) -> decltype(auto) {
+    auto ref_tuple = __detail::flatten_aux(value);
+    return __detail::forward_ref_tuple<_Tp>(ref_tuple);
 }
 
 template <aggregate_type _Tp, typename... _Arg>
