@@ -1,3 +1,4 @@
+#if __has_include(<print>)
 #include <iostream>
 #include <print>
 
@@ -6,3 +7,5 @@ signed main() {
     std::print("Hello World {}\n", 114514);
     return 0;
 }
+
+#endif
