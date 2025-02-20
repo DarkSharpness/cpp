@@ -1,4 +1,4 @@
-#include "common.h"
+#include "common.h" // IWYU pragma: keep
 
 std::mutex lock;
 std::condition_variable cv;
@@ -28,7 +28,7 @@ void producer() {
     }
 }
 
-signed main(int argc, char **argv) {
+signed main(int, char **) {
     int m;
     std::cin >> m;
     std::vector<std::thread> threads;
