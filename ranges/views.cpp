@@ -23,7 +23,7 @@ void an_annoying_same_iter_API(_Iter begin, _Iter end) {
     }
 }
 
-void test_common_view(size_t count) {
+void test_common_view(size_t) {
     auto view = std::views::iota(0ull);
     // an_annoying_same_iter_API(view.begin(), view.end());
     auto common_view = view | std::views::common;
@@ -35,6 +35,11 @@ void test_counted_view(std::span<const int> view) {
         std::cout << x << std::endl;
     }
 }
+
+#pragma GCC diagnostic push
+#ifndef __clang__
+#pragma GCC diagnostic ignored "-Wdangling-reference"
+#endif
 
 void test_drop_take_reverse_view(std::span<const int> view) {
     for (auto x : view | std::views::drop(2) | std::views::take(2)) {
@@ -51,6 +56,8 @@ void test_drop_take_reverse_view(std::span<const int> view) {
         std::cout << x << std::endl;
     }
 }
+
+#pragma GCC diagnostic pop
 
 #include <map>
 
