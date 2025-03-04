@@ -28,11 +28,20 @@ concept tuple_like_aux = requires { std::tuple_size<_Tp>::value; } &&
 template <typename _Tp>
 concept tuple_like = tuple_like_aux<std::decay_t<_Tp>>;
 
+template <typename T>
+inline constexpr auto skip_init_v = false;
+template <typename T>
+inline constexpr auto skip_init_v<std::tuple<T>> = true;
+
 /* A init helper to get the size of a struct. */
 struct any_init {
     template <typename _Tp>
-    constexpr operator _Tp();
+    constexpr operator _Tp()
+        requires(!skip_init_v<_Tp>);
 };
+
+/* deficiency: some types need to be removed from init, otherwise sambiguous */
+static_assert(requires(void (*f)(std::tuple<int>)) { f(any_init{}); }, "implicit cast");
 
 struct arg_counter {
     template <typename... _Args>
