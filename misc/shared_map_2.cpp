@@ -59,7 +59,7 @@ protected:
         return std::get<LockedMap<Key, Entry>>(storage);
     }
 
-    auto lru_visit(Entry &entry) -> const Value & {
+    auto lru_visit(const Entry &entry) -> const Value & {
         const auto guard = std::lock_guard{lru_mutex};
         /** \attention The dereference of the iterator must be done within the lock */
         const auto iterator = entry.iterator;
