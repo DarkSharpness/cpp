@@ -135,12 +135,12 @@ protected:
             do {
                 auto old_iter    = iter++;
                 auto &[_, entry] = *old_iter;
-                if (!evict(entry.value)) {
+                if (evict(entry.value)) {
+                    entry.iterator = LRUiterator{}; // to be evicted
+                    evicted.splice(evicted.end(), lru_list, old_iter);
+                } else {
                     waiting.splice(waiting.end(), lru_list, old_iter);
-                    continue;
                 }
-                entry.iterator = LRUiterator{}; // to be evicted
-                evicted.splice(evicted.end(), lru_list, old_iter);
             } while (predicate() && iter != lru_list.end());
             // move the waiting list to the end of the lru list
             lru_list.splice(lru_list.end(), waiting);
