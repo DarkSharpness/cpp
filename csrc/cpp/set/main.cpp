@@ -5,7 +5,7 @@
 #include <cstdlib>
 #include <format>
 #include <iostream>
-// #include <set>
+#include <set>
 #include <string>
 #include <unordered_set>
 
@@ -13,11 +13,12 @@ template <typename _Set>
 auto benchmark() {
     _Set set;
     auto tic        = std::chrono::steady_clock::now();
-    constexpr int N = 50000000;
+    constexpr int N = 5000000;
+    ::srand(42);
     for (int i = 0; i < N; ++i)
-        set.insert(i);
+        set.insert(::rand());
     for (int i = 0; i < N; ++i)
-        set.erase(unsigned(i) * i);
+        set.erase(::rand());
     auto toc = std::chrono::steady_clock::now();
     auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(toc - tic);
     std::cout << std::format("Time taken to insert {} elements: {} ms\n", N, dur.count());
@@ -76,9 +77,11 @@ auto main() -> int {
     correctness();
     correctness_string();
 
+    benchmark<std::set<int>>();
     benchmark<std::unordered_set<std::size_t>>();
     benchmark<dark::int_set>();
 
+    benchmark_string<std::set<std::string>>();
     benchmark_string<std::unordered_set<std::string>>();
     benchmark_string<dark::radix_tree>();
 }

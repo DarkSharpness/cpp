@@ -1,6 +1,7 @@
 #include "utils/error.h"
 #include <array>
 #include <bit>
+#include <bitset>
 #include <cstddef>
 #include <limits>
 #include <memory>
@@ -21,9 +22,6 @@ public:
     }
     auto contains(std::size_t v) const -> bool {
         return (v >> bit) == prefix;
-    }
-    auto _debug_bit() const -> int {
-        return bit;
     }
 
     base_node(std::size_t o, normal_node *p, int b, Type t) noexcept :
@@ -49,13 +47,42 @@ public:
 using node_ptr = std::unique_ptr<base_node, base_node::deleter>;
 
 struct leaf_node final : base_node {
-    leaf_node(std::size_t v, normal_node *p) : base_node(v, p, 0, Type::Leaf) {}
+public:
+    inline static constexpr int kMask = (1 << 12) - 1;
+    leaf_node(std::size_t v, normal_node *p) : base_node(v, p, 12, Type::Leaf) {}
+    auto try_set(std::size_t v) -> bool {
+        if (auto ref = bitset[v & kMask]) {
+            return false;
+        } else {
+            ++count;
+            ref = true;
+            return true;
+        }
+    }
+    auto try_unset(std::size_t v) -> bool {
+        if (auto ref = bitset[v & kMask]) {
+            --count;
+            ref = false;
+            return true;
+        } else {
+            return false;
+        }
+    }
+    auto test(std::size_t v) const -> bool {
+        return bitset[v & kMask];
+    }
+
+private:
+    std::size_t count = 0; // number of children
+    std::bitset<1 << 12> bitset{};
 };
 
 struct normal_node final : base_node {
 public:
+    inline static constexpr int kMask = (1 << 4) - 1;
+
     normal_node(std::size_t v, normal_node *p, int b) : base_node(v, p, b, Type::Normal) {
-        assume(b > 0 && b % 4 == 0, "Invalid bit index {}", b);
+        assume(b > 12 && b % 4 == 0, "Invalid bit index {}", b);
     }
 
     auto operator[](std::size_t i) -> node_ptr & {
@@ -64,18 +91,6 @@ public:
 
     auto operator[](std::size_t i) const -> const node_ptr & {
         return children[(i >> (bit - 4)) & kMask];
-    }
-
-    inline static constexpr int kMask = (1 << 4) - 1;
-
-    const auto &_debug(const base_node *parent, bool verbose = true) const {
-        if (!verbose)
-            return children;
-        call_in_debug_mode([&] {
-            assume(parent == this->parent, "Parent mismatch");
-            debugger() << "Normal: Prefix=" << prefix << " Bit=" << bit << "\n";
-        });
-        return children;
     }
 
 private:
@@ -99,21 +114,26 @@ public:
 
     struct iterator {
     public:
-        iterator() = default;
+        iterator() : m_node(nullptr), m_offset(0) {}
         auto operator*() const -> _Int {
-            return m_node->start();
+            return m_offset | m_node->start();
         }
         auto has_value() const -> bool {
             return m_node != nullptr;
         }
 
     private:
-        iterator(base_node *node) : m_node(node) {}
-        base_node *m_node;
+        iterator(base_node *node, std::size_t v) :
+            m_node(static_cast<leaf_node *>(node)), m_offset(v & leaf_node::kMask) {
+            assume(node != nullptr && node->type == base_node::Type::Leaf, "Invalid iterator");
+        }
+        leaf_node *m_node;
+        int m_offset;
         friend struct set;
     };
 
     struct insert_result_t {
+        [[no_unique_address]]
         iterator it;
         bool inserted;
     };
@@ -125,68 +145,19 @@ public:
     }
 
     auto erase(_Int v) -> erase_result_t {
-        auto result = s_try_locate(&m_root, v);
-        if (result == nullptr)
-            return false;
-        const_cast<node_ptr &>(*result) = nullptr;
-        return true;
+        return s_try_remove(&m_root, v);
     }
 
     auto find(_Int v) const -> iterator {
-        auto result = s_try_locate(&m_root, v);
-        return iterator(result ? result->get() : nullptr);
-    }
-
-    auto _debug() const -> void {
-        call_in_debug_mode([this] {
-            s_debug_print(&m_root);
-            debugger() << "End of debug\n";
-        });
-    }
-
-    auto _debug_check() const -> void {
-        call_in_debug_mode([this] {
-            auto dfs = [](auto &&dfs, const base_node *node, std::size_t depth) -> void {
-                assume(depth < kLevel, "Depth out of range");
-                const auto bit = node->_debug_bit();
-                assume(bit % 4 == 0, "Bit index must be multiple of 4");
-                if (node->type == base_node::Type::Normal) {
-                    auto *const n = static_cast<const normal_node *>(node);
-                    for (auto &child : n->_debug(node, false)) {
-                        if (child == nullptr)
-                            continue;
-                        assume(child->parent == node, "Parent mismatch");
-                        assume(
-                            child->_debug_bit() < bit, "Invalid bit index {} >= {}",
-                            child->_debug_bit(), bit
-                        );
-                        dfs(dfs, child.get(), depth + 1);
-                    }
-                }
-            };
-            dfs(dfs, &m_root, 0);
-        });
+        return s_try_locate(&m_root, v);
     }
 
 private:
-    static auto s_debug_print(const base_node *const node) -> void {
-        if (!node)
-            return;
-        if (node->type == base_node::Type::Leaf) {
-            auto *const n = static_cast<const leaf_node *>(node);
-            debugger() << "Leaf: " << n->start() << "\n";
-        } else {
-            auto *const n = static_cast<const normal_node *>(node);
-            for (auto &child : n->_debug(node)) {
-                if (child == nullptr)
-                    continue;
-                s_debug_print(child.get());
-            }
-        }
-    }
 
     static auto s_make_leaf(std::size_t v, normal_node *p) -> node_ptr {
-        return node_ptr{new leaf_node{v, p}};
+        auto result = new leaf_node{v >> 12, p};
+        result->try_set(v);
+        return node_ptr{result};
     }
 
     static auto s_make_normal(std::size_t v, normal_node *p, int b) -> node_ptr {
@@ -207,7 +178,7 @@ private:
         child_entry       = std::move(new_entry);
         auto &result      = middle[v];
         result            = s_make_leaf(v, &middle);
-        return insert_result_t{result.get(), true};
+        return insert_result_t{{result.get(), v}, true};
     }
 
     static auto s_try_insert(normal_node *parent, const std::size_t v) -> insert_result_t {
@@ -215,31 +186,54 @@ private:
             auto &child_entry = (*parent)[v];
             if (child_entry == nullptr) {
                 child_entry = s_make_leaf(v, parent);
-                return insert_result_t{child_entry.get(), true};
+                return insert_result_t{{child_entry.get(), v}, true};
             }
 
             if (!child_entry->contains(v))
                 return s_split_at(parent, child_entry, v);
 
-            if (child_entry->type == base_node::Type::Leaf)
-                return insert_result_t{child_entry.get(), false};
+            if (child_entry->type == base_node::Type::Leaf) {
+                auto leaf = static_cast<leaf_node &>(*child_entry.get());
+                return insert_result_t{{&leaf, v}, leaf.try_set(v)};
+            }
 
+            assume(child_entry->type == base_node::Type::Normal, "Invalid node type");
             parent = static_cast<normal_node *>(child_entry.get());
         } while (true);
     }
 
-    static auto s_try_locate(const normal_node *parent, std::size_t view) -> const node_ptr * {
+    static auto s_try_remove(normal_node *parent, const std::size_t v) -> erase_result_t {
         do {
-            auto &child_entry = (*parent)[view];
+            auto &child_entry = (*parent)[v];
             if (child_entry == nullptr)
-                return nullptr;
+                return false;
 
-            if (!child_entry->contains(view))
-                return nullptr;
+            if (!child_entry->contains(v))
+                return false;
 
             if (child_entry->type == base_node::Type::Leaf)
-                return &child_entry;
+                return static_cast<leaf_node &>(*child_entry.get()).try_unset(v);
 
+            assume(child_entry->type == base_node::Type::Normal, "Invalid node type");
+            parent = static_cast<normal_node *>(child_entry.get());
+        } while (true);
+    }
+
+    static auto s_try_locate(const normal_node *parent, const std::size_t v) -> iterator {
+        do {
+            auto &child_entry = (*parent)[v];
+            if (child_entry == nullptr)
+                return {};
+
+            if (!child_entry->contains(v))
+                return {};
+
+            if (child_entry->type == base_node::Type::Leaf)
+                return static_cast<leaf_node *>(child_entry.get())->test(v)
+                         ? iterator{child_entry.get(), v}
+                         : iterator{};
+
+            assume(child_entry->type == base_node::Type::Normal, "Invalid node type");
             parent = static_cast<normal_node *>(child_entry.get());
         } while (true);
     }
