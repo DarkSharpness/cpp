@@ -22,12 +22,21 @@ target("error-handler")
     add_ldflags("-lstdc++_libbacktrace")
 
 target("test-sets")
-    set_kind("binary")
     add_deps("error-handler")
     set_warnings(warnings)
     add_cxflags(other_cxflags)
     add_includedirs("csrc/include")
     add_files("csrc/cpp/set/*.cpp")
+    if is_mode("debug") then
+        add_defines("_DARK_DEBUG")
+    end
+
+target("test-function-view")
+    add_deps("error-handler")
+    set_warnings(warnings)
+    add_cxflags(other_cxflags)
+    add_includedirs("csrc/include")
+    add_files("csrc/cpp/function/*.cpp")
     if is_mode("debug") then
         add_defines("_DARK_DEBUG")
     end
