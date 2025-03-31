@@ -1,6 +1,6 @@
 #include "set/int_set.h"
 #include "set/str_set.h"
-#include <chrono>
+#include "utils/benchmark.h"
 #include <cstddef>
 #include <cstdlib>
 #include <format>
@@ -9,18 +9,10 @@
 #include <string>
 #include <unordered_set>
 
-template <typename F>
-[[nodiscard("This time should be used")]] auto measure_time(F &&f) -> long long {
-    auto tic = std::chrono::steady_clock::now();
-    f();
-    auto toc = std::chrono::steady_clock::now();
-    return std::chrono::duration_cast<std::chrono::milliseconds>(toc - tic).count();
-}
-
 template <typename _Set>
 auto benchmark() {
     constexpr int N = 5000000;
-    const auto dur  = measure_time([&]() {
+    const auto dur  = dark::benchmark::timing([&]() {
         _Set set;
         ::srand(42);
         for (int i = 0; i < N; ++i)
@@ -28,13 +20,13 @@ auto benchmark() {
         for (int i = 0; i < N; ++i)
             set.erase(::rand());
     });
-    std::cout << std::format("Time taken to insert {} elements: {} ms\n", N, dur);
+    std::cout << std::format("Time taken to insert {} elements: {}\n", N, dur);
 }
 
 template <typename _Set>
 auto benchmark_string() {
     constexpr int N = 1000000;
-    const auto dur  = measure_time([&]() {
+    const auto dur  = dark::benchmark::timing([&]() {
         _Set set;
         constexpr int M = 1000000 * 100;
         ::srand(42);
@@ -43,7 +35,7 @@ auto benchmark_string() {
         for (int i = 0; i < N; ++i)
             set.erase(std::to_string(::rand() % M));
     });
-    std::cout << std::format("Time taken to insert {} elements: {} ms\n", N, dur);
+    std::cout << std::format("Time taken to insert {} elements: {}\n", N, dur);
 }
 
 auto correctness() -> void {
