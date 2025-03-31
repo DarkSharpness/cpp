@@ -3,7 +3,7 @@
 #include <bit>
 #include <bitset>
 #include <cstddef>
-#include <limits>
+#include <cstdint>
 #include <memory>
 #include <utility>
 
@@ -17,14 +17,14 @@ public:
         Leaf,   // Not other data
         Normal, // Normal node
     };
-    auto start() const -> std::size_t {
+    auto start() const -> std::uint64_t {
         return prefix << bit;
     }
-    auto contains(std::size_t v) const -> bool {
+    auto contains(std::uint64_t v) const -> bool {
         return (v >> bit) == prefix;
     }
 
-    base_node(std::size_t o, normal_node *p, int b, Type t) noexcept :
+    base_node(std::uint64_t o, normal_node *p, int b, Type t) noexcept :
         parent(p), prefix(o), bit(b), type(t) {
         assume(std::bit_width(prefix) + bit <= 64, "Prefix out of range: {}", prefix);
         assume(bit % 4 == 0, "Bit index must be multiple of 4: {}", bit);
@@ -32,9 +32,9 @@ public:
 
     normal_node *parent; // parent node
 
-    const std::size_t prefix; // prefix bits
-    const int bit;            // bit index
-    const Type type;          // node type
+    const std::uint64_t prefix; // prefix bits
+    const int bit;              // bit index
+    const Type type;            // node type
 
     static auto s_destroy(base_node *) noexcept -> void;
     struct deleter {
@@ -49,8 +49,9 @@ using node_ptr = std::unique_ptr<base_node, base_node::deleter>;
 struct leaf_node final : base_node {
 public:
     inline static constexpr int kMask = (1 << 12) - 1;
-    leaf_node(std::size_t v, normal_node *p) : base_node(v, p, 12, Type::Leaf) {}
-    auto try_set(std::size_t v) -> bool {
+    leaf_node(std::uint64_t v, normal_node *p) : base_node(v, p, 12, Type::Leaf) {}
+
+    auto try_set(std::uint64_t v) -> bool {
         if (auto ref = bitset[v & kMask]) {
             return false;
         } else {
@@ -59,7 +60,8 @@ public:
             return true;
         }
     }
-    auto try_unset(std::size_t v) -> bool {
+
+    auto try_unset(std::uint64_t v) -> bool {
         if (auto ref = bitset[v & kMask]) {
             --count;
             ref = false;
@@ -68,7 +70,8 @@ public:
             return false;
         }
     }
-    auto test(std::size_t v) const -> bool {
+
+    auto test(std::uint64_t v) const -> bool {
         return bitset[v & kMask];
     }
 
@@ -80,16 +83,15 @@ private:
 struct normal_node final : base_node {
 public:
     inline static constexpr int kMask = (1 << 4) - 1;
-
-    normal_node(std::size_t v, normal_node *p, int b) : base_node(v, p, b, Type::Normal) {
+    normal_node(std::uint64_t v, normal_node *p, int b) : base_node(v, p, b, Type::Normal) {
         assume(b > 12 && b % 4 == 0, "Invalid bit index {}", b);
     }
 
-    auto operator[](std::size_t i) -> node_ptr & {
+    auto operator[](std::uint64_t i) -> node_ptr & {
         return children[(i >> (bit - 4)) & kMask];
     }
 
-    auto operator[](std::size_t i) const -> const node_ptr & {
+    auto operator[](std::uint64_t i) const -> const node_ptr & {
         return children[(i >> (bit - 4)) & kMask];
     }
 
@@ -106,8 +108,6 @@ inline auto base_node::s_destroy(base_node *ptr) noexcept -> void {
     }
 }
 
-using _Int = std::size_t;
-
 struct set {
 public:
     set() = default;
@@ -115,7 +115,7 @@ public:
     struct iterator {
     public:
         iterator() : m_node(nullptr), m_offset(0) {}
-        auto operator*() const -> _Int {
+        auto operator*() const -> std::uint64_t {
             return m_offset | m_node->start();
         }
         auto has_value() const -> bool {
@@ -123,7 +123,7 @@ public:
         }
 
     private:
-        iterator(base_node *node, std::size_t v) :
+        iterator(base_node *node, std::uint64_t v) :
             m_node(static_cast<leaf_node *>(node)), m_offset(v & leaf_node::kMask) {
             assume(node != nullptr && node->type == base_node::Type::Leaf, "Invalid iterator");
         }
@@ -140,31 +140,31 @@ public:
 
     using erase_result_t = bool;
 
-    auto insert(_Int v) -> insert_result_t {
+    auto insert(std::uint64_t v) -> insert_result_t {
         return s_try_insert(&m_root, v);
     }
 
-    auto erase(_Int v) -> erase_result_t {
+    auto erase(std::uint64_t v) -> erase_result_t {
         return s_try_remove(&m_root, v);
     }
 
-    auto find(_Int v) const -> iterator {
+    auto find(std::uint64_t v) const -> iterator {
         return s_try_locate(&m_root, v);
     }
 
 private:
 
-    static auto s_make_leaf(std::size_t v, normal_node *p) -> node_ptr {
+    static auto s_make_leaf(std::uint64_t v, normal_node *p) -> node_ptr {
         auto result = new leaf_node{v >> 12, p};
         result->try_set(v);
         return node_ptr{result};
     }
 
-    static auto s_make_normal(std::size_t v, normal_node *p, int b) -> node_ptr {
+    static auto s_make_normal(std::uint64_t v, normal_node *p, int b) -> node_ptr {
         return node_ptr{new normal_node{v >> b, p, b}};
     }
 
-    static auto s_split_at(normal_node *parent, node_ptr &child_entry, const std::size_t v)
+    static auto s_split_at(normal_node *parent, node_ptr &child_entry, const std::uint64_t v)
         -> insert_result_t {
         const auto u      = child_entry->start();
         const auto topbit = std::bit_width(v ^ u);
@@ -181,7 +181,7 @@ private:
         return insert_result_t{{result.get(), v}, true};
     }
 
-    static auto s_try_insert(normal_node *parent, const std::size_t v) -> insert_result_t {
+    static auto s_try_insert(normal_node *parent, const std::uint64_t v) -> insert_result_t {
         do {
             auto &child_entry = (*parent)[v];
             if (child_entry == nullptr) {
@@ -202,7 +202,7 @@ private:
         } while (true);
     }
 
-    static auto s_try_remove(normal_node *parent, const std::size_t v) -> erase_result_t {
+    static auto s_try_remove(normal_node *parent, const std::uint64_t v) -> erase_result_t {
         do {
             auto &child_entry = (*parent)[v];
             if (child_entry == nullptr)
@@ -219,7 +219,7 @@ private:
         } while (true);
     }
 
-    static auto s_try_locate(const normal_node *parent, const std::size_t v) -> iterator {
+    static auto s_try_locate(const normal_node *parent, const std::uint64_t v) -> iterator {
         do {
             auto &child_entry = (*parent)[v];
             if (child_entry == nullptr)
@@ -239,8 +239,7 @@ private:
     }
 
     inline constexpr static int kBitLen = std::bit_width(normal_node::kMask + 0u);
-    inline constexpr static auto kLevel = std::numeric_limits<std::size_t>::digits / kBitLen;
-    normal_node m_root{0, nullptr, kLevel *kBitLen};
+    normal_node m_root{0, nullptr, 64}; // root node
 };
 
 } // namespace dark::__detail::intset
