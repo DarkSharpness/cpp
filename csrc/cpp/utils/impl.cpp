@@ -4,6 +4,7 @@
 #include <iostream>
 #include <mutex>
 #include <shared_mutex>
+#include <stacktrace>
 #include <syncstream>
 
 namespace dark {
@@ -21,11 +22,13 @@ static auto get_impl() noexcept -> decltype(auto) {
                       " at {}:{}: {}\n",
                 detail, loc.file_name(), loc.line(), str
             );
+            auto stack_trace = std::stacktrace::current();
             if (str.empty()) {
                 msg.resize(msg.size() - 3);
                 msg.back() = '\n';
             }
             std::cerr << msg;
+            std::cerr << stack_trace;
             throw std::runtime_error(detail);
         }}
     };

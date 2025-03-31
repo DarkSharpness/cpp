@@ -95,7 +95,7 @@ public:
     {
         if (cond) [[likely]]
             return;
-        if constexpr (IN_DEBUG)
+        if constexpr (!IN_DEBUG)
             std::unreachable();
         panic(loc.function_name(), loc, "assumption failed");
     }
@@ -107,7 +107,7 @@ public:
     ) {
         if (cond) [[likely]]
             return;
-        if constexpr (IN_DEBUG)
+        if constexpr (!IN_DEBUG)
             std::unreachable();
         if constexpr (sizeof...(args) == 0)
             panic(std::string(fmt.get()), loc, "assumption failed");
@@ -120,7 +120,7 @@ public:
     explicit assume(_Cond &&cond, _Fn &&fn, _Args &&...args, _Src_t loc = _Src_t::current()) {
         if (cond) [[likely]]
             return;
-        if constexpr (IN_DEBUG)
+        if constexpr (!IN_DEBUG)
             std::unreachable();
         panic(
             __detail::invoke_callable(std::forward<_Fn>(fn), std::forward<_Args>(args)...), loc,
