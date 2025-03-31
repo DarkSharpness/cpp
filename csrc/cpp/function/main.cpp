@@ -38,6 +38,8 @@ auto main() -> int {
     };
     // allow steal from another function pointer
     f = dark::function_view<int(int)>{another_fun};
+    dark::assume(f.get() == nullptr, "f doesn't come from this function pointer");
+    dark::assume(f.get<double(int)>() != nullptr, "f comes from this function pointer");
     // for right value function, need an extra unsafe tag to indicate that
     // captured variables are not used
     one_time_use({[z = guard()](int x) { return x + 1; }, {}});
