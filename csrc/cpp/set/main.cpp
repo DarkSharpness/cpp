@@ -9,35 +9,41 @@
 #include <string>
 #include <unordered_set>
 
+template <typename F>
+[[nodiscard("This time should be used")]] auto measure_time(F &&f) -> long long {
+    auto tic = std::chrono::steady_clock::now();
+    f();
+    auto toc = std::chrono::steady_clock::now();
+    return std::chrono::duration_cast<std::chrono::milliseconds>(toc - tic).count();
+}
+
 template <typename _Set>
 auto benchmark() {
-    _Set set;
-    auto tic        = std::chrono::steady_clock::now();
     constexpr int N = 5000000;
-    ::srand(42);
-    for (int i = 0; i < N; ++i)
-        set.insert(::rand());
-    for (int i = 0; i < N; ++i)
-        set.erase(::rand());
-    auto toc = std::chrono::steady_clock::now();
-    auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(toc - tic);
-    std::cout << std::format("Time taken to insert {} elements: {} ms\n", N, dur.count());
+    const auto dur  = measure_time([&]() {
+        _Set set;
+        ::srand(42);
+        for (int i = 0; i < N; ++i)
+            set.insert(::rand());
+        for (int i = 0; i < N; ++i)
+            set.erase(::rand());
+    });
+    std::cout << std::format("Time taken to insert {} elements: {} ms\n", N, dur);
 }
 
 template <typename _Set>
 auto benchmark_string() {
-    _Set set;
-    auto tic        = std::chrono::steady_clock::now();
     constexpr int N = 1000000;
-    constexpr int M = 1000000 * 100;
-    ::srand(42);
-    for (int i = 0; i < N; ++i)
-        set.insert(std::to_string(::rand() % M));
-    for (int i = 0; i < N; ++i)
-        set.erase(std::to_string(::rand() % M));
-    auto toc = std::chrono::steady_clock::now();
-    auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(toc - tic);
-    std::cout << std::format("Time taken to insert {} elements: {} ms\n", N, dur.count());
+    const auto dur  = measure_time([&]() {
+        _Set set;
+        constexpr int M = 1000000 * 100;
+        ::srand(42);
+        for (int i = 0; i < N; ++i)
+            set.insert(std::to_string(::rand() % M));
+        for (int i = 0; i < N; ++i)
+            set.erase(std::to_string(::rand() % M));
+    });
+    std::cout << std::format("Time taken to insert {} elements: {} ms\n", N, dur);
 }
 
 auto correctness() -> void {
@@ -46,7 +52,7 @@ auto correctness() -> void {
     set.insert(2);
     set.insert(4);
     set.insert(8);
-    set.insert(200);
+    set.insert(4096);
     std::cout << std::format("Set contains 1: {}\n", set.find(1).has_value());
     set.erase(1);
     std::cout << std::format("Set contains 1: {}\n", set.find(1).has_value());
