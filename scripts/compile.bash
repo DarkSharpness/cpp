@@ -1,6 +1,6 @@
 #/usr/bin/bash
 
-args="-Wall -Wextra -Werror -Wpedantic -std=c++23 -D _DEBUG -D _LOCAL"
+args="-Wall -Wextra -Werror -Wpedantic -std=c++26 -D _DEBUG -D _LOCAL"
 
 file=$1
 binary=$2
