@@ -15,6 +15,7 @@ consteval auto make_void(const _Tp &) -> void {}
 template <typename _Tp>
 consteval auto get_aux(const _Tp &obj) -> decltype(auto) {
     // rely on ADL to find the correct get() function
+    using std::get;
     constexpr auto kSize = std::tuple_size<_Tp>::value - 1;
     return make_void(get<kSize>(obj));
 }
