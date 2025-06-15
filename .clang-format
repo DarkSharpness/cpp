@@ -25,7 +25,7 @@ BitFieldColonSpacing: Both
 BreakBeforeConceptDeclarations: Always
 BreakConstructorInitializers: AfterColon
 BreakStringLiterals: true
-AlwaysBreakTemplateDeclarations: true
+AlwaysBreakTemplateDeclarations: "Yes"
 ColumnLimit: 90
 DerivePointerAlignment: false
 EmptyLineAfterAccessModifier: Leave
@@ -46,5 +46,3 @@ IncludeCategories:
     CaseSensitive:   false
 IndentCaseLabels: true
 IndentWidth: 4
-
----
